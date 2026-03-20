@@ -1,0 +1,31 @@
+# Application Configuration
+# ========================
+
+app:
+  name: "Vehicle Test Analysis"
+  version: "0.1.0"
+  language: "zh_CN"
+
+database:
+  type: "sqlite"
+  path: "database/vehicle_test.db"
+  echo: false
+
+paths:
+  projects: "data/projects"
+  imports: "data/imports"
+  exports: "data/exports"
+  templates: "config/templates"
+
+time_sync:
+  default_precision_ms: 10.0
+
+report:
+  default_format: "docx"
+  default_template: "standard"
+  output_dir: "data/exports"
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/app.log"

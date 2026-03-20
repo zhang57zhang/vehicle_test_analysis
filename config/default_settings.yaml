@@ -1,0 +1,37 @@
+# Default Settings
+# ================
+
+# Default test phase for new projects
+default_test_phase: "HIL"
+
+# Default indicator settings
+indicators:
+  default_tolerance_percent: 5.0
+  default_judgment: "inconclusive"
+
+# Data import settings
+import:
+  max_file_size_mb: 500
+  supported_formats:
+    - ".blf"
+    - ".asc"
+    - ".mf4"
+    - ".mdf"
+    - ".csv"
+    - ".tdms"
+    - ".dat"
+    - ".mat"
+
+# Report settings
+report:
+  include_data_source: true
+  include_calculation_details: true
+  include_timestamps: true
+
+# UI settings
+ui:
+  theme: "light"
+  font_size: 12
+  window_size:
+    width: 1200
+    height: 800
