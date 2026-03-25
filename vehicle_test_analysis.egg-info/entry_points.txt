@@ -1,0 +1,6 @@
+[console_scripts]
+vehicle-test-analysis = src.main:main
+vta = src.main:main
+
+[gui_scripts]
+vta-gui = src.main:main_gui

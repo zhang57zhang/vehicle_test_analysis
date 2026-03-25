@@ -13,22 +13,29 @@ class TestMain:
 
     def test_main_returns_zero(self):
         """Test that main() returns 0 (success)."""
-        result = main()
+        result = main([])
         assert result == 0
 
     def test_main_prints_message(self, capsys):
         """Test that main() prints expected messages."""
-        main()
+        main([])
         captured = capsys.readouterr()
         assert "Vehicle Test Analysis System" in captured.out
-        assert "vta-gui" in captured.out
 
     def test_main_as_script_execution(self):
         """Test that main() can be called directly."""
         # Just verify the function is callable and returns int
-        result = main()
+        result = main([])
         assert isinstance(result, int)
         assert result >= 0
+
+    def test_main_gui_flag(self):
+        """Test that --gui flag triggers GUI mode."""
+        with patch('src.main.main_gui') as mock_gui:
+            mock_gui.return_value = 0
+            result = main(['--gui'])
+            mock_gui.assert_called_once()
+            assert result == 0
 
 
 class TestMainGui:
