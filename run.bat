@@ -1,19 +1,14 @@
 @echo off
-REM Vehicle Test Analysis - Windows 启动脚本
-REM 用法: run.bat [命令]
+REM Vehicle Test Analysis - Windows Startup Script
 
 setlocal
-
-REM 切换到脚本所在目录
 cd /d "%~dp0"
 
-REM 检查虚拟环境
 if not exist "venv\Scripts\python.exe" (
-    echo [错误] 虚拟环境不存在，请先运行 install.bat
+    echo [ERROR] Virtual environment not found. Please run install.bat first.
     exit /b 1
 )
 
-REM 解析命令
 set COMMAND=%1
 
 if "%COMMAND%"=="" goto help
@@ -25,48 +20,48 @@ if "%COMMAND%"=="clean" goto clean
 
 :help
 echo.
-echo Vehicle Test Analysis - 车载控制器测试数据分析系统
+echo Vehicle Test Analysis
 echo.
-echo 用法: run.bat [命令]
+echo Usage: run.bat [command]
 echo.
-echo 命令:
-echo   gui      启动图形界面
-echo   cli      启动命令行
-echo   test     运行测试
-echo   install  安装依赖
-echo   clean    清理缓存文件
+echo Commands:
+echo   gui      Start GUI
+echo   cli      Start CLI
+echo   test     Run tests
+echo   install  Install dependencies
+echo   clean    Clean cache files
 echo.
 exit /b 0
 
 :gui
-echo 启动图形界面...
+echo Starting GUI...
 venv\Scripts\python.exe -m src.main --gui
 exit /b %ERRORLEVEL%
 
 :cli
-echo 启动命令行模式...
+echo Starting CLI...
 venv\Scripts\python.exe -m src.main
 exit /b %ERRORLEVEL%
 
 :test
-echo 运行测试...
+echo Running tests...
 venv\Scripts\python.exe -m pytest tests/ -v --cov=src --cov-report=term-missing
 exit /b %ERRORLEVEL%
 
 :install
-echo 安装依赖...
+echo Installing dependencies...
 venv\Scripts\pip.exe install -r requirements.txt
 venv\Scripts\pip.exe install -e .
-echo 安装完成
+echo Done.
 exit /b 0
 
 :clean
-echo 清理缓存文件...
+echo Cleaning cache files...
 for /d /r %%d in (__pycache__) do @if exist "%%d" rd /s /q "%%d"
 if exist ".coverage" del /q ".coverage"
 if exist "htmlcov" rd /s /q "htmlcov"
 if exist ".pytest_cache" rd /s /q ".pytest_cache"
-echo 清理完成
+echo Done.
 exit /b 0
 
 endlocal
