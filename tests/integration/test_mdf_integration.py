@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Integration tests for MDF file parsing workflow.
 
@@ -33,26 +34,24 @@ class TestMDFParsingIntegration:
         """Create mock MDF data for testing without actual MDF files."""
         # Create mock signal data
         timestamps = np.linspace(0, 10, 1001)
-        vehicle_speed = np.concatenate([
-            np.linspace(0, 100, 500),
-            np.linspace(100, 50, 501)
-        ])
-        engine_rpm = np.concatenate([
-            np.linspace(800, 3000, 500),
-            np.linspace(3000, 1500, 501)
-        ])
-        throttle = np.concatenate([
-            np.linspace(0, 100, 200),
-            np.ones(300) * 100,
-            np.linspace(100, 50, 501)
-        ])
+        vehicle_speed = np.concatenate(
+            [np.linspace(0, 100, 500), np.linspace(100, 50, 501)]
+        )
+        engine_rpm = np.concatenate(
+            [np.linspace(800, 3000, 500), np.linspace(3000, 1500, 501)]
+        )
+        throttle = np.concatenate(
+            [np.linspace(0, 100, 200), np.ones(300) * 100, np.linspace(100, 50, 501)]
+        )
 
-        return pd.DataFrame({
-            "time": timestamps,
-            "VehicleSpeed": vehicle_speed,
-            "EngineRPM": engine_rpm,
-            "ThrottlePosition": throttle,
-        })
+        return pd.DataFrame(
+            {
+                "time": timestamps,
+                "VehicleSpeed": vehicle_speed,
+                "EngineRPM": engine_rpm,
+                "ThrottlePosition": throttle,
+            }
+        )
 
     @pytest.fixture
     def mock_mdf_file(self, tmp_path, mock_mdf_data):
@@ -95,14 +94,19 @@ class TestMDFParsingIntegration:
     def test_mdf_parsing_with_mock(self, mock_mdf_file, mock_mdf_data):
         """Test MDF parsing with mocked asammdf."""
         mdf_path, expected_data = mock_mdf_file
-        
+
         # Create the file so validation passes
         mdf_path.write_bytes(b"fake mdf content")
 
         # Setup mock
         mock_mdf = MagicMock()
         mock_mdf.version = "4.10"
-        mock_mdf.channels_db.keys.return_value = ["time", "VehicleSpeed", "EngineRPM", "ThrottlePosition"]
+        mock_mdf.channels_db.keys.return_value = [
+            "time",
+            "VehicleSpeed",
+            "EngineRPM",
+            "ThrottlePosition",
+        ]
 
         # Mock signal extraction
         def create_mock_signal(name, data):
@@ -114,7 +118,7 @@ class TestMDFParsingIntegration:
         mock_mdf.get.side_effect = lambda name: create_mock_signal(name, expected_data)
 
         # Parse with mocked MDF
-        with patch('asammdf.MDF', return_value=mock_mdf):
+        with patch("asammdf.MDF", return_value=mock_mdf):
             parser = MDFParser(mdf_path)
             result = parser.parse()
 
@@ -125,14 +129,19 @@ class TestMDFParsingIntegration:
     def test_mdf_parsing_with_channel_filter(self, mock_mdf_file, mock_mdf_data):
         """Test MDF parsing with specific channel selection."""
         mdf_path, expected_data = mock_mdf_file
-        
+
         # Create the file so validation passes
         mdf_path.write_bytes(b"fake mdf content")
 
         # Setup mock
         mock_mdf = MagicMock()
         mock_mdf.version = "4.10"
-        mock_mdf.channels_db.keys.return_value = ["time", "VehicleSpeed", "EngineRPM", "ThrottlePosition"]
+        mock_mdf.channels_db.keys.return_value = [
+            "time",
+            "VehicleSpeed",
+            "EngineRPM",
+            "ThrottlePosition",
+        ]
 
         def create_mock_signal(name, data):
             signal = MagicMock()
@@ -143,7 +152,7 @@ class TestMDFParsingIntegration:
         mock_mdf.get.side_effect = lambda name: create_mock_signal(name, expected_data)
 
         # Parse with specific channels
-        with patch('asammdf.MDF', return_value=mock_mdf):
+        with patch("asammdf.MDF", return_value=mock_mdf):
             parser = MDFParser(
                 mdf_path,
                 channels=["VehicleSpeed", "EngineRPM"],
@@ -156,7 +165,7 @@ class TestMDFParsingIntegration:
     def test_mdf_parsing_with_raster(self, mock_mdf_file, mock_mdf_data):
         """Test MDF parsing with resampling."""
         mdf_path, expected_data = mock_mdf_file
-        
+
         # Create the file so validation passes
         mdf_path.write_bytes(b"fake mdf content")
 
@@ -166,7 +175,11 @@ class TestMDFParsingIntegration:
         mock_mdf.channels_db.keys.return_value = ["time", "VehicleSpeed", "EngineRPM"]
 
         mock_resampled = MagicMock()
-        mock_resampled.channels_db.keys.return_value = ["time", "VehicleSpeed", "EngineRPM"]
+        mock_resampled.channels_db.keys.return_value = [
+            "time",
+            "VehicleSpeed",
+            "EngineRPM",
+        ]
 
         def create_mock_signal(name, data):
             signal = MagicMock()
@@ -174,11 +187,13 @@ class TestMDFParsingIntegration:
             signal.samples = expected_data[name].values
             return signal
 
-        mock_resampled.get.side_effect = lambda name: create_mock_signal(name, expected_data)
+        mock_resampled.get.side_effect = lambda name: create_mock_signal(
+            name, expected_data
+        )
         mock_mdf.resample.return_value = mock_resampled
 
         # Parse with raster
-        with patch('asammdf.MDF', return_value=mock_mdf):
+        with patch("asammdf.MDF", return_value=mock_mdf):
             parser = MDFParser(mdf_path, raster=0.1)
             result = parser.parse()
 
@@ -202,27 +217,27 @@ class TestMDFToIndicatorIntegration:
     @pytest.fixture
     def sample_dataframe(self):
         """Create sample DataFrame simulating MDF parsed data."""
-        return pd.DataFrame({
-            "time": np.linspace(0, 10, 1001),
-            "VehicleSpeed": np.concatenate([
-                np.linspace(0, 100, 500),
-                np.linspace(100, 50, 501)
-            ]),
-            "EngineRPM": np.concatenate([
-                np.linspace(800, 3000, 500),
-                np.linspace(3000, 1500, 501)
-            ]),
-            "ThrottlePosition": np.concatenate([
-                np.linspace(0, 100, 200),
-                np.ones(300) * 100,
-                np.linspace(100, 50, 501)
-            ]),
-            "BrakePressure": np.concatenate([
-                np.zeros(300),
-                np.linspace(0, 50, 200),
-                np.linspace(50, 0, 501)
-            ]),
-        })
+        return pd.DataFrame(
+            {
+                "time": np.linspace(0, 10, 1001),
+                "VehicleSpeed": np.concatenate(
+                    [np.linspace(0, 100, 500), np.linspace(100, 50, 501)]
+                ),
+                "EngineRPM": np.concatenate(
+                    [np.linspace(800, 3000, 500), np.linspace(3000, 1500, 501)]
+                ),
+                "ThrottlePosition": np.concatenate(
+                    [
+                        np.linspace(0, 100, 200),
+                        np.ones(300) * 100,
+                        np.linspace(100, 50, 501),
+                    ]
+                ),
+                "BrakePressure": np.concatenate(
+                    [np.zeros(300), np.linspace(0, 50, 200), np.linspace(50, 0, 501)]
+                ),
+            }
+        )
 
     def test_mdf_data_to_indicator_single_value(self, sample_dataframe):
         """Test single value indicator calculation on MDF-like data."""
@@ -260,7 +275,7 @@ class TestMDFToIndicatorIntegration:
 
         assert result is not None
         assert result.calculated_value is not None
-        # Average should be around (800 + 3000 + 1500) / 3 ï¿?1767
+        # Average should be around (800 + 3000 + 1500) / 3 ~ 1767
         assert 1500 < result.calculated_value < 2500
 
     def test_mdf_data_to_indicator_time_domain(self, sample_dataframe):
@@ -341,16 +356,20 @@ class TestMDFTimeSynchronization:
     def multi_rate_data(self):
         """Create multi-rate data for time sync testing."""
         # High rate data (100 Hz)
-        high_rate = pd.DataFrame({
-            "time": np.linspace(0, 1, 101),
-            "HighRateSignal": np.sin(2 * np.pi * 5 * np.linspace(0, 1, 101)),
-        })
+        high_rate = pd.DataFrame(
+            {
+                "time": np.linspace(0, 1, 101),
+                "HighRateSignal": np.sin(2 * np.pi * 5 * np.linspace(0, 1, 101)),
+            }
+        )
 
         # Low rate data (10 Hz)
-        low_rate = pd.DataFrame({
-            "time": np.linspace(0, 1, 11),
-            "LowRateSignal": np.linspace(0, 100, 11),
-        })
+        low_rate = pd.DataFrame(
+            {
+                "time": np.linspace(0, 1, 11),
+                "LowRateSignal": np.linspace(0, 100, 11),
+            }
+        )
 
         return high_rate, low_rate
 
@@ -386,10 +405,12 @@ class TestMDFTimeSynchronization:
 
     def test_resample_single_dataframe(self):
         """Test resampling a single DataFrame."""
-        data = pd.DataFrame({
-            "time": np.linspace(0, 10, 1001),
-            "Signal": np.sin(2 * np.pi * 0.5 * np.linspace(0, 10, 1001)),
-        })
+        data = pd.DataFrame(
+            {
+                "time": np.linspace(0, 10, 1001),
+                "Signal": np.sin(2 * np.pi * 0.5 * np.linspace(0, 10, 1001)),
+            }
+        )
 
         sync = TimeSynchronizer()
         resampled = sync.resample(data, "time", target_rate_hz=10.0)
@@ -441,14 +462,16 @@ class TestMDFDataFiltering:
     @pytest.fixture
     def sample_data(self):
         """Create sample parsed MDF data."""
-        return pd.DataFrame({
-            "time": np.linspace(0, 10, 1001),
-            "Signal1": np.random.randn(1001),
-            "Signal2": np.random.randn(1001) + 10,
-            "Signal3": np.random.randn(1001) * 2,
-        })
+        return pd.DataFrame(
+            {
+                "time": np.linspace(0, 10, 1001),
+                "Signal1": np.random.randn(1001),
+                "Signal2": np.random.randn(1001) + 10,
+                "Signal3": np.random.randn(1001) * 2,
+            }
+        )
 
-    @patch('asammdf.MDF')
+    @patch("asammdf.MDF")
     def test_get_data_with_time_range(self, mock_mdf_class, tmp_path, sample_data):
         """Test getting data with time range filter."""
         mdf_path = tmp_path / "test.mf4"
@@ -477,7 +500,7 @@ class TestMDFDataFiltering:
             assert filtered["time"].min() >= 2.0
             assert filtered["time"].max() <= 5.0
 
-    @patch('asammdf.MDF')
+    @patch("asammdf.MDF")
     def test_get_data_with_signals(self, mock_mdf_class, tmp_path, sample_data):
         """Test getting specific signals from data."""
         mdf_path = tmp_path / "test.mf4"
@@ -514,15 +537,16 @@ class TestMDFToReportIntegration:
     @pytest.fixture
     def sample_mdf_data(self):
         """Create sample MDF-like data."""
-        return pd.DataFrame({
-            "time": np.linspace(0, 10, 1001),
-            "VehicleSpeed": np.linspace(0, 100, 1001),
-            "EngineRPM": np.linspace(800, 3000, 1001),
-            "ThrottlePosition": np.concatenate([
-                np.linspace(0, 100, 500),
-                np.linspace(100, 0, 501)
-            ]),
-        })
+        return pd.DataFrame(
+            {
+                "time": np.linspace(0, 10, 1001),
+                "VehicleSpeed": np.linspace(0, 100, 1001),
+                "EngineRPM": np.linspace(800, 3000, 1001),
+                "ThrottlePosition": np.concatenate(
+                    [np.linspace(0, 100, 500), np.linspace(100, 0, 501)]
+                ),
+            }
+        )
 
     def test_mdf_data_to_report_workflow(self, sample_mdf_data, tmp_path):
         """Test complete workflow from MDF data to report."""
@@ -571,9 +595,17 @@ class TestMDFToReportIntegration:
                     "title": "Indicator Results",
                     "headers": ["Indicator", "Value", "Unit"],
                     "rows": [
-                        [r.definition.name if hasattr(r.definition, 'name') else r.definition.get('name', 'unknown'),
-                         f"{r.calculated_value:.2f}" if r.calculated_value else "N/A",
-                         r.definition.unit if hasattr(r.definition, 'unit') else r.definition.get('unit', '')]
+                        [
+                            r.definition.name
+                            if hasattr(r.definition, "name")
+                            else r.definition.get("name", "unknown"),
+                            f"{r.calculated_value:.2f}"
+                            if r.calculated_value
+                            else "N/A",
+                            r.definition.unit
+                            if hasattr(r.definition, "unit")
+                            else r.definition.get("unit", ""),
+                        ]
                         for r in results
                     ],
                 }

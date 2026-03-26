@@ -22,8 +22,8 @@ from src.database.models import (
     Project,
     Report,
     Signal,
-    TestCase,
-    TestResult,
+    TestCaseModel,
+    TestResultModel,
     User,
 )
 
@@ -264,10 +264,10 @@ class DatabaseManager:
         test_steps: Optional[str] = None,
         expected_result: Optional[str] = None,
         source_file: Optional[str] = None,
-    ) -> TestCase:
+    ) -> TestCaseModel:
         """Create a new test case."""
         with self.session() as session:
-            test_case = TestCase(
+            test_case = TestCaseModel(
                 project_id=project_id,
                 case_id=case_id,
                 name=name,
@@ -284,10 +284,10 @@ class DatabaseManager:
             session.refresh(test_case)
             return self._detach(test_case)
 
-    def get_test_case(self, test_case_id: int) -> Optional[TestCase]:
+    def get_test_case(self, test_case_id: int) -> Optional[TestCaseModel]:
         """Get test case by ID."""
         with self.session() as session:
-            test_case = session.get(TestCase, test_case_id)
+            test_case = session.get(TestCaseModel, test_case_id)
             if test_case:
                 return self._detach(test_case)
             return None
@@ -296,12 +296,12 @@ class DatabaseManager:
         self,
         project_id: int,
         test_type: Optional[str] = None,
-    ) -> List[TestCase]:
+    ) -> List[TestCaseModel]:
         """List test cases for a project."""
         with self.session() as session:
-            query = select(TestCase).where(TestCase.project_id == project_id)
+            query = select(TestCaseModel).where(TestCaseModel.project_id == project_id)
             if test_type:
-                query = query.where(TestCase.test_type == test_type)
+                query = query.where(TestCaseModel.test_type == test_type)
             test_cases = session.execute(query).scalars().all()
             return [self._detach(tc) for tc in test_cases]
 
@@ -459,10 +459,10 @@ class DatabaseManager:
         test_case_id: int,
         result: str,
         notes: Optional[str] = None,
-    ) -> TestResult:
+    ) -> TestResultModel:
         """Create a new test result."""
         with self.session() as session:
-            test_result = TestResult(
+            test_result = TestResultModel(
                 test_case_id=test_case_id,
                 result=result,
                 notes=notes,
@@ -472,10 +472,10 @@ class DatabaseManager:
             session.refresh(test_result)
             return self._detach(test_result)
 
-    def get_test_result(self, test_result_id: int) -> Optional[TestResult]:
+    def get_test_result(self, test_result_id: int) -> Optional[TestResultModel]:
         """Get test result by ID."""
         with self.session() as session:
-            test_result = session.get(TestResult, test_result_id)
+            test_result = session.get(TestResultModel, test_result_id)
             if test_result:
                 return self._detach(test_result)
             return None
@@ -486,10 +486,10 @@ class DatabaseManager:
         adjusted_result: str,
         adjustment_reason: str,
         adjusted_by: int,
-    ) -> Optional[TestResult]:
+    ) -> Optional[TestResultModel]:
         """Adjust a test result."""
         with self.session() as session:
-            test_result = session.get(TestResult, test_result_id)
+            test_result = session.get(TestResultModel, test_result_id)
             if not test_result:
                 return None
             test_result.result_adjusted = adjusted_result

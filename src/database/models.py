@@ -37,7 +37,9 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     email: Mapped[Optional[str]] = mapped_column(String(255), unique=True)
     full_name: Mapped[Optional[str]] = mapped_column(String(200))
-    role: Mapped[str] = mapped_column(String(50), default="engineer")  # admin, engineer, viewer
+    role: Mapped[str] = mapped_column(
+        String(50), default="engineer"
+    )  # admin, engineer, viewer
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(
@@ -79,8 +81,8 @@ class Project(Base):
 
     # Relationships
     owner: Mapped["User"] = relationship("User", back_populates="projects")
-    test_cases: Mapped[list["TestCase"]] = relationship(
-        "TestCase", back_populates="project", cascade="all, delete-orphan"
+    test_cases: Mapped[list["TestCaseModel"]] = relationship(
+        "TestCaseModel", back_populates="project", cascade="all, delete-orphan"
     )
     data_files: Mapped[list["DataFile"]] = relationship(
         "DataFile", back_populates="project", cascade="all, delete-orphan"
@@ -93,14 +95,16 @@ class Project(Base):
         return f"<Project(id={self.id}, name='{self.name}', phase='{self.test_phase}')>"
 
 
-class TestCase(Base):
+class TestCaseModel(Base):
     """Test case definition model."""
 
     __tablename__ = "test_cases"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     project_id: Mapped[int] = mapped_column(ForeignKey("projects.id"), nullable=False)
-    case_id: Mapped[str] = mapped_column(String(100), nullable=False)  # External ID from Excel
+    case_id: Mapped[str] = mapped_column(
+        String(100), nullable=False
+    )  # External ID from Excel
     name: Mapped[str] = mapped_column(String(500), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text)
     test_type: Mapped[str] = mapped_column(
@@ -110,7 +114,9 @@ class TestCase(Base):
     preconditions: Mapped[Optional[str]] = mapped_column(Text)
     test_steps: Mapped[Optional[str]] = mapped_column(Text)
     expected_result: Mapped[Optional[str]] = mapped_column(Text)
-    source_file: Mapped[Optional[str]] = mapped_column(String(500))  # Original Excel file
+    source_file: Mapped[Optional[str]] = mapped_column(
+        String(500)
+    )  # Original Excel file
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
@@ -121,12 +127,12 @@ class TestCase(Base):
     indicators: Mapped[list["Indicator"]] = relationship(
         "Indicator", back_populates="test_case", cascade="all, delete-orphan"
     )
-    test_results: Mapped[list["TestResult"]] = relationship(
-        "TestResult", back_populates="test_case", cascade="all, delete-orphan"
+    test_results: Mapped[list["TestResultModel"]] = relationship(
+        "TestResultModel", back_populates="test_case", cascade="all, delete-orphan"
     )
 
     def __repr__(self) -> str:
-        return f"<TestCase(id={self.id}, case_id='{self.case_id}', name='{self.name}')>"
+        return f"<TestCaseModel(id={self.id}, case_id='{self.case_id}', name='{self.name}')>"
 
 
 class Indicator(Base):
@@ -135,7 +141,9 @@ class Indicator(Base):
     __tablename__ = "indicators"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    test_case_id: Mapped[int] = mapped_column(ForeignKey("test_cases.id"), nullable=False)
+    test_case_id: Mapped[int] = mapped_column(
+        ForeignKey("test_cases.id"), nullable=False
+    )
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text)
     signal_name: Mapped[Optional[str]] = mapped_column(String(200))
@@ -153,7 +161,9 @@ class Indicator(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     # Relationships
-    test_case: Mapped["TestCase"] = relationship("TestCase", back_populates="indicators")
+    test_case: Mapped["TestCaseModel"] = relationship(
+        "TestCaseModel", back_populates="indicators"
+    )
     results: Mapped[list["IndicatorResult"]] = relationship(
         "IndicatorResult", back_populates="indicator", cascade="all, delete-orphan"
     )
@@ -175,7 +185,9 @@ class DataFile(Base):
     file_type: Mapped[str] = mapped_column(String(50))  # blf, asc, mdf, csv, etc.
     file_hash: Mapped[Optional[str]] = mapped_column(String(64))  # SHA256
     collection_time: Mapped[Optional[datetime]] = mapped_column(DateTime)
-    time_range_start: Mapped[Optional[float]] = mapped_column(Float)  # Timestamp in seconds
+    time_range_start: Mapped[Optional[float]] = mapped_column(
+        Float
+    )  # Timestamp in seconds
     time_range_end: Mapped[Optional[float]] = mapped_column(Float)
     data_points: Mapped[Optional[int]] = mapped_column(Integer)
     signal_count: Mapped[Optional[int]] = mapped_column(Integer)
@@ -202,7 +214,9 @@ class Signal(Base):
     __tablename__ = "signals"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    data_file_id: Mapped[int] = mapped_column(ForeignKey("data_files.id"), nullable=False)
+    data_file_id: Mapped[int] = mapped_column(
+        ForeignKey("data_files.id"), nullable=False
+    )
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     message_id: Mapped[Optional[int]] = mapped_column(Integer)  # CAN message ID
     message_name: Mapped[Optional[str]] = mapped_column(String(200))
@@ -222,16 +236,20 @@ class Signal(Base):
         return f"<Signal(id={self.id}, name='{self.name}', unit='{self.unit}')>"
 
 
-class TestResult(Base):
+class TestResultModel(Base):
     """Test execution result model."""
 
     __tablename__ = "test_results"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    test_case_id: Mapped[int] = mapped_column(ForeignKey("test_cases.id"), nullable=False)
+    test_case_id: Mapped[int] = mapped_column(
+        ForeignKey("test_cases.id"), nullable=False
+    )
     execution_time: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     result: Mapped[str] = mapped_column(String(50))  # pass, fail, inconclusive, not_run
-    result_adjusted: Mapped[Optional[str]] = mapped_column(String(50))  # Manual adjustment
+    result_adjusted: Mapped[Optional[str]] = mapped_column(
+        String(50)
+    )  # Manual adjustment
     adjustment_reason: Mapped[Optional[str]] = mapped_column(Text)
     adjusted_by: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"))
     adjusted_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
@@ -239,13 +257,15 @@ class TestResult(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     # Relationships
-    test_case: Mapped["TestCase"] = relationship("TestCase", back_populates="test_results")
+    test_case: Mapped["TestCaseModel"] = relationship(
+        "TestCaseModel", back_populates="test_results"
+    )
     indicator_results: Mapped[list["IndicatorResult"]] = relationship(
         "IndicatorResult", back_populates="test_result", cascade="all, delete-orphan"
     )
 
     def __repr__(self) -> str:
-        return f"<TestResult(id={self.id}, result='{self.result}')>"
+        return f"<TestResultModel(id={self.id}, result='{self.result}')>"
 
 
 class IndicatorResult(Base):
@@ -254,20 +274,32 @@ class IndicatorResult(Base):
     __tablename__ = "indicator_results"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    test_result_id: Mapped[int] = mapped_column(ForeignKey("test_results.id"), nullable=False)
-    indicator_id: Mapped[int] = mapped_column(ForeignKey("indicators.id"), nullable=False)
+    test_result_id: Mapped[int] = mapped_column(
+        ForeignKey("test_results.id"), nullable=False
+    )
+    indicator_id: Mapped[int] = mapped_column(
+        ForeignKey("indicators.id"), nullable=False
+    )
     calculated_value: Mapped[Optional[float]] = mapped_column(Float)
-    raw_value: Mapped[Optional[float]] = mapped_column(Float)  # Before any transformation
+    raw_value: Mapped[Optional[float]] = mapped_column(
+        Float
+    )  # Before any transformation
     result: Mapped[str] = mapped_column(String(50))  # pass, fail, inconclusive
-    data_source: Mapped[Optional[str]] = mapped_column(Text)  # JSON: file, time range, etc.
-    calculation_details: Mapped[Optional[str]] = mapped_column(Text)  # JSON: formula, intermediate values
+    data_source: Mapped[Optional[str]] = mapped_column(
+        Text
+    )  # JSON: file, time range, etc.
+    calculation_details: Mapped[Optional[str]] = mapped_column(
+        Text
+    )  # JSON: formula, intermediate values
     time_range_start: Mapped[Optional[float]] = mapped_column(Float)
     time_range_end: Mapped[Optional[float]] = mapped_column(Float)
     data_points_used: Mapped[Optional[int]] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     # Relationships
-    test_result: Mapped["TestResult"] = relationship("TestResult", back_populates="indicator_results")
+    test_result: Mapped["TestResultModel"] = relationship(
+        "TestResultModel", back_populates="indicator_results"
+    )
     indicator: Mapped["Indicator"] = relationship("Indicator", back_populates="results")
 
     def __repr__(self) -> str:
@@ -309,7 +341,9 @@ class OperationLog(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     operation: Mapped[str] = mapped_column(String(100), nullable=False)
-    target_type: Mapped[Optional[str]] = mapped_column(String(50))  # project, test_case, report, etc.
+    target_type: Mapped[Optional[str]] = mapped_column(
+        String(50)
+    )  # project, test_case, report, etc.
     target_id: Mapped[Optional[int]] = mapped_column(Integer)
     details: Mapped[Optional[str]] = mapped_column(Text)  # JSON format
     ip_address: Mapped[Optional[str]] = mapped_column(String(50))

@@ -5,6 +5,11 @@ from src.parsers.can_parser import CANParser
 from src.parsers.csv_parser import CSVParser
 from src.parsers.mdf_parser import MDFParser
 from src.parsers.dbc_parser import DBCParser
+from src.parsers.excel_parser import (
+    ExcelTestCaseParser,
+    ParsedTestCase,
+    ParsedIndicator,
+)
 
 __all__ = [
     "BaseParser",
@@ -14,4 +19,7 @@ __all__ = [
     "CSVParser",
     "MDFParser",
     "DBCParser",
+    "ExcelTestCaseParser",
+    "ParsedTestCase",
+    "ParsedIndicator",
 ]

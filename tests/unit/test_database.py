@@ -16,8 +16,8 @@ from src.database.models import (
     Project,
     Report,
     Signal,
-    TestCase,
-    TestResult,
+    TestCaseModel,
+    TestResultModel,
     User,
     init_database,
 )
@@ -29,13 +29,13 @@ def temp_db():
     """Create a temporary database for testing."""
     with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
         db_path = f.name
-    
+
     db_url = f"sqlite:///{db_path}"
     db_manager = DatabaseManager(db_url)
     db_manager.initialize()
-    
+
     yield db_manager
-    
+
     # Cleanup - dispose engine first to close all connections
     db_manager.engine.dispose()
     try:
@@ -69,7 +69,7 @@ class TestUserOperations:
             full_name="Test User",
             role="engineer",
         )
-        
+
         assert user.id is not None
         assert user.username == "testuser"
         assert user.email == "test@example.com"
@@ -82,7 +82,7 @@ class TestUserOperations:
             username="testuser",
             password_hash="hashed_password",
         )
-        
+
         user = temp_db.get_user(created.id)
         assert user is not None
         assert user.username == "testuser"
@@ -98,7 +98,7 @@ class TestUserOperations:
             username="testuser",
             password_hash="hashed_password",
         )
-        
+
         user = temp_db.get_user_by_username("testuser")
         assert user is not None
         assert user.username == "testuser"
@@ -107,7 +107,7 @@ class TestUserOperations:
         """Test listing users."""
         temp_db.create_user("user1", "hash1")
         temp_db.create_user("user2", "hash2")
-        
+
         users = temp_db.list_users()
         assert len(users) == 2
 
@@ -118,14 +118,14 @@ class TestProjectOperations:
     def test_create_project(self, temp_db):
         """Test creating a project."""
         user = temp_db.create_user("testuser", "hash")
-        
+
         project = temp_db.create_project(
             name="Test Project",
             owner_id=user.id,
             description="Test description",
             test_phase="HIL",
         )
-        
+
         assert project.id is not None
         assert project.name == "Test Project"
         assert project.owner_id == user.id
@@ -135,7 +135,7 @@ class TestProjectOperations:
         """Test getting a project by ID."""
         user = temp_db.create_user("testuser", "hash")
         created = temp_db.create_project("Test Project", user.id)
-        
+
         project = temp_db.get_project(created.id)
         assert project is not None
         assert project.name == "Test Project"
@@ -145,7 +145,7 @@ class TestProjectOperations:
         user = temp_db.create_user("testuser", "hash")
         temp_db.create_project("Project 1", user.id)
         temp_db.create_project("Project 2", user.id)
-        
+
         projects = temp_db.list_projects()
         assert len(projects) == 2
 
@@ -153,10 +153,10 @@ class TestProjectOperations:
         """Test listing projects by owner."""
         user1 = temp_db.create_user("user1", "hash1")
         user2 = temp_db.create_user("user2", "hash2")
-        
+
         temp_db.create_project("Project 1", user1.id)
         temp_db.create_project("Project 2", user2.id)
-        
+
         projects = temp_db.list_projects(owner_id=user1.id)
         assert len(projects) == 1
         assert projects[0].name == "Project 1"
@@ -165,13 +165,13 @@ class TestProjectOperations:
         """Test updating a project."""
         user = temp_db.create_user("testuser", "hash")
         project = temp_db.create_project("Test Project", user.id)
-        
+
         updated = temp_db.update_project(
             project.id,
             name="Updated Project",
             description="New description",
         )
-        
+
         assert updated is not None
         assert updated.name == "Updated Project"
         assert updated.description == "New description"
@@ -180,10 +180,10 @@ class TestProjectOperations:
         """Test deleting a project."""
         user = temp_db.create_user("testuser", "hash")
         project = temp_db.create_project("Test Project", user.id)
-        
+
         result = temp_db.delete_project(project.id)
         assert result is True
-        
+
         deleted = temp_db.get_project(project.id)
         assert deleted is None
 
@@ -195,7 +195,7 @@ class TestCaseOperations:
         """Test creating a test case."""
         user = temp_db.create_user("testuser", "hash")
         project = temp_db.create_project("Test Project", user.id)
-        
+
         test_case = temp_db.create_test_case(
             project_id=project.id,
             case_id="TC001",
@@ -203,7 +203,7 @@ class TestCaseOperations:
             test_type="functional",
             priority="P1",
         )
-        
+
         assert test_case.id is not None
         assert test_case.case_id == "TC001"
         assert test_case.name == "Test Case 1"
@@ -214,7 +214,7 @@ class TestCaseOperations:
         user = temp_db.create_user("testuser", "hash")
         project = temp_db.create_project("Test Project", user.id)
         created = temp_db.create_test_case(project.id, "TC001", "Test Case 1")
-        
+
         test_case = temp_db.get_test_case(created.id)
         assert test_case is not None
         assert test_case.case_id == "TC001"
@@ -223,10 +223,10 @@ class TestCaseOperations:
         """Test listing test cases."""
         user = temp_db.create_user("testuser", "hash")
         project = temp_db.create_project("Test Project", user.id)
-        
+
         temp_db.create_test_case(project.id, "TC001", "Test Case 1")
         temp_db.create_test_case(project.id, "TC002", "Test Case 2")
-        
+
         test_cases = temp_db.list_test_cases(project.id)
         assert len(test_cases) == 2
 
@@ -239,7 +239,7 @@ class TestIndicatorOperations:
         user = temp_db.create_user("testuser", "hash")
         project = temp_db.create_project("Test Project", user.id)
         test_case = temp_db.create_test_case(project.id, "TC001", "Test Case 1")
-        
+
         indicator = temp_db.create_indicator(
             test_case_id=test_case.id,
             name="Response Time",
@@ -248,7 +248,7 @@ class TestIndicatorOperations:
             unit="s",
             upper_limit=1.0,
         )
-        
+
         assert indicator.id is not None
         assert indicator.name == "Response Time"
         assert indicator.signal_name == "VehicleSpeed"
@@ -259,7 +259,7 @@ class TestIndicatorOperations:
         project = temp_db.create_project("Test Project", user.id)
         test_case = temp_db.create_test_case(project.id, "TC001", "Test Case 1")
         created = temp_db.create_indicator(test_case.id, "Indicator 1")
-        
+
         indicator = temp_db.get_indicator(created.id)
         assert indicator is not None
         assert indicator.name == "Indicator 1"
@@ -269,10 +269,10 @@ class TestIndicatorOperations:
         user = temp_db.create_user("testuser", "hash")
         project = temp_db.create_project("Test Project", user.id)
         test_case = temp_db.create_test_case(project.id, "TC001", "Test Case 1")
-        
+
         temp_db.create_indicator(test_case.id, "Indicator 1")
         temp_db.create_indicator(test_case.id, "Indicator 2")
-        
+
         indicators = temp_db.list_indicators(test_case.id)
         assert len(indicators) == 2
 
@@ -284,7 +284,7 @@ class TestDataFileOperations:
         """Test creating a data file record."""
         user = temp_db.create_user("testuser", "hash")
         project = temp_db.create_project("Test Project", user.id)
-        
+
         data_file = temp_db.create_data_file(
             project_id=project.id,
             file_name="test.blf",
@@ -292,7 +292,7 @@ class TestDataFileOperations:
             file_type="blf",
             file_size=1024,
         )
-        
+
         assert data_file.id is not None
         assert data_file.file_name == "test.blf"
         assert data_file.file_type == "blf"
@@ -304,7 +304,7 @@ class TestDataFileOperations:
         created = temp_db.create_data_file(
             project.id, "test.blf", "/data/test.blf", "blf"
         )
-        
+
         data_file = temp_db.get_data_file(created.id)
         assert data_file is not None
         assert data_file.file_name == "test.blf"
@@ -313,10 +313,10 @@ class TestDataFileOperations:
         """Test listing data files."""
         user = temp_db.create_user("testuser", "hash")
         project = temp_db.create_project("Test Project", user.id)
-        
+
         temp_db.create_data_file(project.id, "file1.blf", "/data/file1.blf", "blf")
         temp_db.create_data_file(project.id, "file2.mf4", "/data/file2.mf4", "mf4")
-        
+
         data_files = temp_db.list_data_files(project.id)
         assert len(data_files) == 2
 
@@ -331,14 +331,14 @@ class TestSignalOperations:
         data_file = temp_db.create_data_file(
             project.id, "test.blf", "/data/test.blf", "blf"
         )
-        
+
         signal = temp_db.create_signal(
             data_file_id=data_file.id,
             name="VehicleSpeed",
             data_type="float",
             unit="km/h",
         )
-        
+
         assert signal.id is not None
         assert signal.name == "VehicleSpeed"
         assert signal.unit == "km/h"
@@ -350,10 +350,10 @@ class TestSignalOperations:
         data_file = temp_db.create_data_file(
             project.id, "test.blf", "/data/test.blf", "blf"
         )
-        
+
         temp_db.create_signal(data_file.id, "Signal1", "float")
         temp_db.create_signal(data_file.id, "Signal2", "float")
-        
+
         signals = temp_db.list_signals(data_file.id)
         assert len(signals) == 2
 
@@ -366,13 +366,13 @@ class TestTestResultOperations:
         user = temp_db.create_user("testuser", "hash")
         project = temp_db.create_project("Test Project", user.id)
         test_case = temp_db.create_test_case(project.id, "TC001", "Test Case 1")
-        
+
         result = temp_db.create_test_result(
             test_case_id=test_case.id,
             result="pass",
             notes="All checks passed",
         )
-        
+
         assert result.id is not None
         assert result.result == "pass"
         assert result.notes == "All checks passed"
@@ -383,14 +383,14 @@ class TestTestResultOperations:
         project = temp_db.create_project("Test Project", user.id)
         test_case = temp_db.create_test_case(project.id, "TC001", "Test Case 1")
         result = temp_db.create_test_result(test_case.id, "fail")
-        
+
         adjusted = temp_db.adjust_test_result(
             result.id,
             adjusted_result="pass",
             adjustment_reason="False positive",
             adjusted_by=user.id,
         )
-        
+
         assert adjusted is not None
         assert adjusted.result_adjusted == "pass"
         assert adjusted.adjustment_reason == "False positive"
@@ -406,7 +406,7 @@ class TestIndicatorResultOperations:
         test_case = temp_db.create_test_case(project.id, "TC001", "Test Case 1")
         indicator = temp_db.create_indicator(test_case.id, "Indicator 1")
         test_result = temp_db.create_test_result(test_case.id, "pass")
-        
+
         result = temp_db.create_indicator_result(
             test_result_id=test_result.id,
             indicator_id=indicator.id,
@@ -414,7 +414,7 @@ class TestIndicatorResultOperations:
             calculated_value=0.5,
             raw_value=0.5,
         )
-        
+
         assert result.id is not None
         assert result.result == "pass"
         assert result.calculated_value == 0.5
@@ -427,14 +427,10 @@ class TestIndicatorResultOperations:
         indicator1 = temp_db.create_indicator(test_case.id, "Indicator 1")
         indicator2 = temp_db.create_indicator(test_case.id, "Indicator 2")
         test_result = temp_db.create_test_result(test_case.id, "pass")
-        
-        temp_db.create_indicator_result(
-            test_result.id, indicator1.id, "pass", 0.5
-        )
-        temp_db.create_indicator_result(
-            test_result.id, indicator2.id, "pass", 1.0
-        )
-        
+
+        temp_db.create_indicator_result(test_result.id, indicator1.id, "pass", 0.5)
+        temp_db.create_indicator_result(test_result.id, indicator2.id, "pass", 1.0)
+
         results = temp_db.list_indicator_results(test_result.id)
         assert len(results) == 2
 
@@ -446,7 +442,7 @@ class TestReportOperations:
         """Test creating a report record."""
         user = temp_db.create_user("testuser", "hash")
         project = temp_db.create_project("Test Project", user.id)
-        
+
         report = temp_db.create_report(
             project_id=project.id,
             name="Test Report",
@@ -454,7 +450,7 @@ class TestReportOperations:
             report_type="formal",
             format="docx",
         )
-        
+
         assert report.id is not None
         assert report.name == "Test Report"
         assert report.format == "docx"
@@ -464,7 +460,7 @@ class TestReportOperations:
         user = temp_db.create_user("testuser", "hash")
         project = temp_db.create_project("Test Project", user.id)
         created = temp_db.create_report(project.id, "Test Report", user.id)
-        
+
         report = temp_db.get_report(created.id)
         assert report is not None
         assert report.name == "Test Report"
@@ -473,10 +469,10 @@ class TestReportOperations:
         """Test listing reports."""
         user = temp_db.create_user("testuser", "hash")
         project = temp_db.create_project("Test Project", user.id)
-        
+
         temp_db.create_report(project.id, "Report 1", user.id)
         temp_db.create_report(project.id, "Report 2", user.id)
-        
+
         reports = temp_db.list_reports(project.id)
         assert len(reports) == 2
 
@@ -487,7 +483,7 @@ class TestOperationLogOperations:
     def test_log_operation(self, temp_db):
         """Test logging an operation."""
         user = temp_db.create_user("testuser", "hash")
-        
+
         log = temp_db.log_operation(
             user_id=user.id,
             operation="create_project",
@@ -495,7 +491,7 @@ class TestOperationLogOperations:
             target_id=1,
             details='{"name": "Test Project"}',
         )
-        
+
         assert log.id is not None
         assert log.operation == "create_project"
         assert log.target_type == "project"
@@ -503,10 +499,10 @@ class TestOperationLogOperations:
     def test_list_operation_logs(self, temp_db):
         """Test listing operation logs."""
         user = temp_db.create_user("testuser", "hash")
-        
+
         temp_db.log_operation(user.id, "operation1")
         temp_db.log_operation(user.id, "operation2")
-        
+
         logs = temp_db.list_operation_logs()
         assert len(logs) == 2
 
@@ -514,10 +510,10 @@ class TestOperationLogOperations:
         """Test listing operation logs by user."""
         user1 = temp_db.create_user("user1", "hash1")
         user2 = temp_db.create_user("user2", "hash2")
-        
+
         temp_db.log_operation(user1.id, "operation1")
         temp_db.log_operation(user2.id, "operation2")
-        
+
         logs = temp_db.list_operation_logs(user_id=user1.id)
         assert len(logs) == 1
 
@@ -529,7 +525,7 @@ class TestUtilityMethods:
         """Test counting records."""
         temp_db.create_user("user1", "hash1")
         temp_db.create_user("user2", "hash2")
-        
+
         count = temp_db.count_records(User)
         assert count == 2
 

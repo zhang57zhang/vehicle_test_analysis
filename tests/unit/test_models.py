@@ -9,11 +9,11 @@ from src.database.models import (
     Base,
     User,
     Project,
-    TestCase,
+    TestCaseModel,
     Indicator,
     DataFile,
     Signal,
-    TestResult,
+    TestResultModel,
     IndicatorResult,
     Report,
     OperationLog,
@@ -99,7 +99,7 @@ class TestDatabaseModels:
         session.add(project)
         session.commit()
 
-        test_case = TestCase(
+        test_case = TestCaseModel(
             project_id=project.id,
             case_id="TC001",
             name="Test Case 1",
@@ -122,7 +122,7 @@ class TestDatabaseModels:
         session.add(project)
         session.commit()
 
-        test_case = TestCase(
+        test_case = TestCaseModel(
             project_id=project.id,
             case_id="TC001",
             name="Test Case",
@@ -210,7 +210,7 @@ class TestDatabaseModels:
         session.add(project)
         session.commit()
 
-        test_case = TestCase(
+        test_case = TestCaseModel(
             project_id=project.id,
             case_id="TC001",
             name="Test Case",
@@ -218,7 +218,7 @@ class TestDatabaseModels:
         session.add(test_case)
         session.commit()
 
-        result = TestResult(
+        result = TestResultModel(
             test_case_id=test_case.id,
             result="pass",
         )
@@ -238,7 +238,7 @@ class TestDatabaseModels:
         session.add(project)
         session.commit()
 
-        test_case = TestCase(
+        test_case = TestCaseModel(
             project_id=project.id,
             case_id="TC001",
             name="Test Case",
@@ -254,7 +254,7 @@ class TestDatabaseModels:
         session.add(indicator)
         session.commit()
 
-        test_result = TestResult(
+        test_result = TestResultModel(
             test_case_id=test_case.id,
             result="pass",
         )

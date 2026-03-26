@@ -20,8 +20,8 @@ from src.database.models import (
     Project,
     Report,
     Signal,
-    TestCase,
-    TestResult,
+    TestCaseModel,
+    TestResultModel,
     User,
 )
 from src.database.operations import DatabaseManager
@@ -32,13 +32,13 @@ def temp_db():
     """Create a temporary database for testing."""
     with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
         db_path = f.name
-    
+
     db_url = f"sqlite:///{db_path}"
     db_manager = DatabaseManager(db_url)
     db_manager.initialize()
-    
+
     yield db_manager
-    
+
     # Cleanup - dispose engine first to close all connections
     db_manager.engine.dispose()
     try:
@@ -70,22 +70,23 @@ class TestDatabaseManagerInit:
             subdir = os.path.join(tmpdir, "nested", "deep")
             db_path = os.path.join(subdir, "test.db")
             db_url = f"sqlite:///{db_path}"
-            
+
             # Directory should not exist yet
             assert not os.path.exists(subdir)
-            
+
             db_manager = DatabaseManager(db_url)
             db_manager.initialize()
-            
+
             # Directory should now exist
             assert os.path.exists(subdir)
             assert db_manager._initialized is True
-            
+
             # Close the engine to release the file lock on Windows
             db_manager.engine.dispose()
         finally:
             # Cleanup - try to remove the directory
             import shutil
+
             try:
                 shutil.rmtree(tmpdir)
             except Exception:
@@ -103,7 +104,7 @@ class TestDatabaseManagerInit:
         with pytest.raises(ValueError):
             with temp_db.session() as session:
                 raise ValueError("Test exception")
-        
+
         # Session should still work after exception
         with temp_db.session() as session:
             assert session is not None
@@ -121,17 +122,17 @@ class TestUserOperationsCoverage:
         """Test listing users including inactive ones."""
         user1 = temp_db.create_user("active_user", "hash1")
         user2 = temp_db.create_user("inactive_user", "hash2")
-        
+
         # Deactivate user2
         with temp_db.session() as session:
             db_user = session.get(User, user2.id)
             db_user.is_active = False
-        
+
         # List only active users
         active_users = temp_db.list_users(active_only=True)
         assert len(active_users) == 1
         assert active_users[0].username == "active_user"
-        
+
         # List all users
         all_users = temp_db.list_users(active_only=False)
         assert len(all_users) == 2
@@ -144,17 +145,17 @@ class TestProjectOperationsCoverage:
         """Test listing projects filtered by status."""
         project1 = temp_db.create_project("Project 1", sample_user.id)
         project2 = temp_db.create_project("Project 2", sample_user.id)
-        
+
         # Update project2 status
         with temp_db.session() as session:
             db_project = session.get(Project, project2.id)
             db_project.status = "archived"
-        
+
         # List only active projects
         active_projects = temp_db.list_projects(status="active")
         assert len(active_projects) == 1
         assert active_projects[0].name == "Project 1"
-        
+
         # List archived projects
         archived_projects = temp_db.list_projects(status="archived")
         assert len(archived_projects) == 1
@@ -232,12 +233,14 @@ class TestUtilityMethodsCoverage:
     def test_execute_raw(self, temp_db):
         """Test executing raw SQL."""
         from sqlalchemy import text
+
         result = temp_db.execute_raw(text("SELECT 1"))
         assert result is not None
 
     def test_execute_raw_with_data(self, temp_db, sample_user):
         """Test executing raw SQL that returns data."""
         from sqlalchemy import text
+
         result = temp_db.execute_raw(text("SELECT * FROM users"))
         assert result is not None
 
@@ -384,7 +387,7 @@ class TestFullParameterCoverage:
         test_case = temp_db.create_test_case(sample_project.id, "TC001", "Test")
         indicator = temp_db.create_indicator(test_case.id, "Indicator")
         test_result = temp_db.create_test_result(test_case.id, "pass")
-        
+
         result = temp_db.create_indicator_result(
             test_result_id=test_result.id,
             indicator_id=indicator.id,
@@ -451,13 +454,13 @@ class TestListTestCasesWithFilter:
         temp_db.create_test_case(
             sample_project.id, "TC002", "Performance Test", test_type="performance"
         )
-        
+
         functional_cases = temp_db.list_test_cases(
             sample_project.id, test_type="functional"
         )
         assert len(functional_cases) == 1
         assert functional_cases[0].test_type == "functional"
-        
+
         performance_cases = temp_db.list_test_cases(
             sample_project.id, test_type="performance"
         )
@@ -491,12 +494,12 @@ class TestListOperations:
         user2 = temp_db.create_user("user2", "hash2")
         project1 = temp_db.create_project("Project 1", sample_user.id)
         project2 = temp_db.create_project("Project 2", user2.id)
-        
+
         # List projects by owner
         user1_projects = temp_db.list_projects(owner_id=sample_user.id)
         assert len(user1_projects) == 1
         assert user1_projects[0].name == "Project 1"
-        
+
         user2_projects = temp_db.list_projects(owner_id=user2.id)
         assert len(user2_projects) == 1
         assert user2_projects[0].name == "Project 2"
@@ -506,7 +509,7 @@ class TestListOperations:
         test_case = temp_db.create_test_case(sample_project.id, "TC001", "Test")
         indicator1 = temp_db.create_indicator(test_case.id, "Indicator 1")
         indicator2 = temp_db.create_indicator(test_case.id, "Indicator 2")
-        
+
         indicators = temp_db.list_indicators(test_case.id)
         assert len(indicators) == 2
 
@@ -518,7 +521,7 @@ class TestListOperations:
         data_file2 = temp_db.create_data_file(
             sample_project.id, "file2.blf", "/data/file2.blf", "blf"
         )
-        
+
         data_files = temp_db.list_data_files(sample_project.id)
         assert len(data_files) == 2
 
@@ -529,7 +532,7 @@ class TestListOperations:
         )
         signal1 = temp_db.create_signal(data_file.id, "Signal1")
         signal2 = temp_db.create_signal(data_file.id, "Signal2")
-        
+
         signals = temp_db.list_signals(data_file.id)
         assert len(signals) == 2
 
@@ -538,26 +541,18 @@ class TestListOperations:
         test_case = temp_db.create_test_case(sample_project.id, "TC001", "Test")
         indicator = temp_db.create_indicator(test_case.id, "Indicator")
         test_result = temp_db.create_test_result(test_case.id, "pass")
-        
-        result1 = temp_db.create_indicator_result(
-            test_result.id, indicator.id, "pass"
-        )
-        result2 = temp_db.create_indicator_result(
-            test_result.id, indicator.id, "pass"
-        )
-        
+
+        result1 = temp_db.create_indicator_result(test_result.id, indicator.id, "pass")
+        result2 = temp_db.create_indicator_result(test_result.id, indicator.id, "pass")
+
         results = temp_db.list_indicator_results(test_result.id)
         assert len(results) == 2
 
     def test_list_reports(self, temp_db, sample_user, sample_project):
         """Test listing reports for a project."""
-        report1 = temp_db.create_report(
-            sample_project.id, "Report 1", sample_user.id
-        )
-        report2 = temp_db.create_report(
-            sample_project.id, "Report 2", sample_user.id
-        )
-        
+        report1 = temp_db.create_report(sample_project.id, "Report 1", sample_user.id)
+        report2 = temp_db.create_report(sample_project.id, "Report 2", sample_user.id)
+
         reports = temp_db.list_reports(sample_project.id)
         assert len(reports) == 2
 
@@ -565,10 +560,10 @@ class TestListOperations:
         """Test listing operation logs."""
         log1 = temp_db.log_operation(sample_user.id, "operation1")
         log2 = temp_db.log_operation(sample_user.id, "operation2")
-        
+
         logs = temp_db.list_operation_logs(user_id=sample_user.id)
         assert len(logs) == 2
-        
+
         all_logs = temp_db.list_operation_logs()
         assert len(all_logs) == 2
 
@@ -580,7 +575,7 @@ class TestCountRecords:
         """Test counting records in a table."""
         count = temp_db.count_records(User)
         assert count == 1
-        
+
         count = temp_db.count_records(Project)
         assert count == 1
 
@@ -592,7 +587,7 @@ class TestAdjustTestResult:
         """Test adjusting a test result successfully."""
         test_case = temp_db.create_test_case(sample_project.id, "TC001", "Test")
         test_result = temp_db.create_test_result(test_case.id, "fail")
-        
+
         adjusted = temp_db.adjust_test_result(
             test_result.id,
             adjusted_result="pass",
