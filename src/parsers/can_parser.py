@@ -21,6 +21,7 @@ class CANParser(BaseParser):
         self,
         file_path: Optional[Path] = None,
         dbc_path: Optional[Path] = None,
+        dbc_parser=None,
         ignore_invalid_frames: bool = True,
     ):
         """
@@ -29,10 +30,12 @@ class CANParser(BaseParser):
         Args:
             file_path: Path to the CAN log file.
             dbc_path: Path to the DBC database file.
+            dbc_parser: Pre-loaded DBCParser instance.
             ignore_invalid_frames: Whether to ignore invalid frames.
         """
         super().__init__(file_path)
         self.dbc_path = Path(dbc_path) if dbc_path else None
+        self.dbc_parser = dbc_parser
         self.ignore_invalid_frames = ignore_invalid_frames
         self._data: Optional[pd.DataFrame] = None
         self._signals: List[str] = []
@@ -67,7 +70,20 @@ class CANParser(BaseParser):
 
         try:
             # Load DBC if provided
-            if self.dbc_path:
+            if self.dbc_parser:
+                try:
+                    import cantools
+
+                    if (
+                        hasattr(self.dbc_parser, "file_path")
+                        and self.dbc_parser.file_path
+                    ):
+                        self._dbc_db = cantools.database.load_file(
+                            str(self.dbc_parser.file_path)
+                        )
+                except Exception as e:
+                    warnings.append(f"Failed to load DBC from parser: {e}")
+            elif self.dbc_path:
                 try:
                     import cantools
 
@@ -204,6 +220,7 @@ class CANParser(BaseParser):
                 # Try can.io.asc.ASCReader (older versions)
                 try:
                     from can.io.asc import ASCReader
+
                     reader = ASCReader(str(path))
                 except ImportError:
                     pass

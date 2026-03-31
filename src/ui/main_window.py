@@ -36,6 +36,8 @@ class MainWindow(QMainWindow):
         self._auth = auth_service
         self._current_project_id: Optional[int] = None
         self._imported_files: list = []
+        self._dbc_files: list = []
+        self._dbc_parser = None
 
         self.setWindowTitle("Vehicle Test Analysis")
         self.setMinimumSize(1200, 800)
@@ -69,6 +71,10 @@ class MainWindow(QMainWindow):
         import_action = file_menu.addAction("Import Data")
         import_action.setShortcut("Ctrl+I")
         import_action.triggered.connect(self._on_import_data)
+
+        import_dbc_action = file_menu.addAction("Import DBC File")
+        import_dbc_action.setShortcut("Ctrl+D")
+        import_dbc_action.triggered.connect(self._on_import_dbc)
 
         file_menu.addSeparator()
 
@@ -115,6 +121,7 @@ class MainWindow(QMainWindow):
         toolbar.addAction("Open", self._on_open_project)
         toolbar.addSeparator()
         toolbar.addAction("Import", self._on_import_data)
+        toolbar.addAction("Import DBC", self._on_import_dbc)
         toolbar.addAction("Analyze", self._on_run_analysis)
         toolbar.addSeparator()
         toolbar.addAction("Report", self._on_generate_report)
@@ -226,6 +233,56 @@ class MainWindow(QMainWindow):
         if file_paths:
             self._import_files(file_paths)
 
+    def _on_import_dbc(self) -> None:
+        """Handle import DBC file action."""
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Import DBC File",
+            "",
+            "DBC Files (*.dbc);;All Files (*)",
+        )
+        if file_path:
+            self._import_dbc(file_path)
+
+    def _import_dbc(self, file_path: str) -> None:
+        """Import and parse a DBC file."""
+        from src.parsers.dbc_parser import DBCParser
+        from pathlib import Path as PathLib
+
+        path = PathLib(file_path)
+        if not path.exists():
+            QMessageBox.warning(self, "Error", f"File not found: {file_path}")
+            return
+
+        try:
+            parser = DBCParser(path)
+            result = parser.parse()
+
+            if result.is_success:
+                self._dbc_files.append(path)
+                self._dbc_parser = parser
+
+                messages = parser.get_messages()
+                signal_count = sum(len(msg.signals) for msg in messages.values())
+
+                QMessageBox.information(
+                    self,
+                    "DBC Imported",
+                    f"Successfully loaded: {path.name}\n"
+                    f"Messages: {len(messages)}\n"
+                    f"Signals: {signal_count}",
+                )
+                self.statusbar.showMessage(f"DBC loaded: {path.name}")
+                self._refresh_data_tab()
+            else:
+                QMessageBox.warning(
+                    self,
+                    "Import Failed",
+                    f"Failed to parse DBC file:\n{result.error_message}",
+                )
+        except Exception as e:
+            QMessageBox.warning(self, "Error", f"Failed to import DBC: {str(e)}")
+
     def _import_files(self, file_paths: list) -> None:
         """Import data files into current project."""
         from pathlib import Path as PathLib
@@ -273,6 +330,7 @@ class MainWindow(QMainWindow):
 
         if imported_count > 0:
             self._parse_imported_files()
+            self._refresh_data_tab()
 
     def _parse_imported_files(self) -> None:
         """Parse imported data files."""
@@ -286,7 +344,7 @@ class MainWindow(QMainWindow):
 
             parser = None
             if file_type in ("blf", "asc"):
-                parser = CANParser(file_path)
+                parser = CANParser(file_path, dbc_parser=self._dbc_parser)
             elif file_type in ("mdf", "mf4", "dat"):
                 parser = MDFParser(file_path)
             elif file_type in ("csv", "txt", "log"):
@@ -411,3 +469,40 @@ class MainWindow(QMainWindow):
                 )
                 label.setStyleSheet("font-size: 14px; padding: 20px;")
                 layout.addWidget(label)
+
+    def _refresh_data_tab(self) -> None:
+        """Refresh data tab with imported files info."""
+        if not self._current_project_id:
+            return
+
+        data_files = self._db.list_data_files(self._current_project_id)
+
+        layout = self.data_tab.layout()
+        if layout:
+            for i in range(layout.count()):
+                widget = layout.itemAt(i).widget()
+                if widget:
+                    widget.deleteLater()
+
+        info_parts = []
+        info_parts.append("=== Data Files ===\n")
+        if data_files:
+            for df in data_files:
+                status = df.import_status or "pending"
+                info_parts.append(
+                    f"- {df.file_name} ({df.file_type.upper()}) [{status}]"
+                )
+        else:
+            info_parts.append("No data files imported")
+
+        info_parts.append("\n=== DBC Files ===\n")
+        if self._dbc_files:
+            for dbc in self._dbc_files:
+                info_parts.append(f"- {dbc.name}")
+        else:
+            info_parts.append("No DBC files imported")
+
+        label = QLabel("\n".join(info_parts))
+        label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+        label.setStyleSheet("font-size: 12px; padding: 20px; font-family: monospace;")
+        layout.addWidget(label)
